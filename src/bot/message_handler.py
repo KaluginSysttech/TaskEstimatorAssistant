@@ -1,6 +1,8 @@
 """Обработчик сообщений и команд Telegram бота."""
 
 import logging
+from typing import Optional
+
 from aiogram import types
 from aiogram.filters import Command
 
@@ -13,8 +15,18 @@ class MessageHandler:
     Обработчик сообщений и команд бота.
     
     Содержит handlers для команд /start, /help и текстовых сообщений.
-    В текущей версии работает в режиме echo (дублирует сообщения).
+    Интегрирован с LLM для обработки пользовательских запросов.
     """
+    
+    def __init__(self, llm_client: Optional['LLMClient'] = None) -> None:
+        """
+        Инициализация обработчика.
+        
+        Args:
+            llm_client: Клиент для работы с LLM (опционально для обратной совместимости)
+        """
+        self.llm_client = llm_client
+        logger.info("MessageHandler initialized")
     
     async def handle_start(self, message: types.Message) -> None:
         """
@@ -64,10 +76,10 @@ class MessageHandler:
     
     async def handle_text(self, message: types.Message) -> None:
         """
-        Обработка текстовых сообщений (echo режим).
+        Обработка текстовых сообщений через LLM.
         
-        В текущей версии просто дублирует сообщение обратно пользователю.
-        В следующих итерациях будет заменено на отправку в LLM.
+        Отправляет сообщение пользователя в LLM и возвращает ответ.
+        Если LLM не настроен, работает в echo режиме.
         
         Args:
             message: Входящее сообщение от пользователя
@@ -77,9 +89,59 @@ class MessageHandler:
         
         logger.info(f"Received message from user {user_id}: {text}")
         
-        # Echo режим - дублируем сообщение
-        response = f"📝 Вы написали: {text}"
+        # Проверяем наличие LLM клиента
+        if self.llm_client is None:
+            # Fallback: echo режим
+            response = f"📝 Вы написали: {text}"
+            await message.answer(response)
+            logger.info(f"Sent echo response to user {user_id} (LLM not configured)")
+            return
         
-        await message.answer(response)
-        logger.info(f"Sent echo response to user {user_id}")
+        try:
+            # Отправляем запрос в LLM
+            logger.info(f"Sending user message to LLM")
+            response = await self.llm_client.get_response(text)
+            
+            # Разбиваем длинные ответы на части (лимит Telegram: 4096 символов)
+            max_length = 4000  # Оставляем запас
+            if len(response) <= max_length:
+                await message.answer(response)
+            else:
+                # Разбиваем на части
+                parts = []
+                while response:
+                    if len(response) <= max_length:
+                        parts.append(response)
+                        break
+                    
+                    # Ищем последний перенос строки в пределах лимита
+                    split_pos = response.rfind('\n', 0, max_length)
+                    if split_pos == -1:
+                        # Если нет переносов, режем по словам
+                        split_pos = response.rfind(' ', 0, max_length)
+                    if split_pos == -1:
+                        # В крайнем случае режем по символам
+                        split_pos = max_length
+                    
+                    parts.append(response[:split_pos])
+                    response = response[split_pos:].lstrip()
+                
+                # Отправляем все части
+                for i, part in enumerate(parts, 1):
+                    if len(parts) > 1:
+                        prefix = f"[Часть {i}/{len(parts)}]\n\n"
+                        await message.answer(prefix + part)
+                    else:
+                        await message.answer(part)
+            
+            logger.info(f"Sent LLM response to user {user_id}")
+            
+        except Exception as e:
+            # Обработка ошибок LLM
+            error_message = (
+                "😔 Извините, произошла ошибка при обработке вашего запроса. "
+                "Пожалуйста, попробуйте позже."
+            )
+            await message.answer(error_message)
+            logger.error(f"Failed to get LLM response for user {user_id}: {e}")
 

@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 
 from config.settings import Settings
 from bot import TelegramBot, MessageHandler
+from llm import LLMClient
 
 
 def setup_logging(log_level: str) -> None:
@@ -75,7 +76,14 @@ async def main() -> None:
     logger.info("=" * 50)
     
     # Инициализация компонентов
-    message_handler = MessageHandler()
+    llm_client = LLMClient(
+        api_key=settings.openrouter_api_key,
+        model=settings.openrouter_model,
+        timeout=settings.llm_timeout
+    )
+    
+    message_handler = MessageHandler(llm_client=llm_client)
+    
     telegram_bot = TelegramBot(
         token=settings.telegram_bot_token,
         message_handler=message_handler
