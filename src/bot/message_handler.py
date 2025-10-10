@@ -18,14 +18,20 @@ class MessageHandler:
     Интегрирован с LLM для обработки пользовательских запросов.
     """
     
-    def __init__(self, llm_client: Optional['LLMClient'] = None) -> None:
+    def __init__(
+        self, 
+        llm_client: Optional['LLMClient'] = None,
+        conversation: Optional['Conversation'] = None
+    ) -> None:
         """
         Инициализация обработчика.
         
         Args:
             llm_client: Клиент для работы с LLM (опционально для обратной совместимости)
+            conversation: Хранилище истории диалогов
         """
         self.llm_client = llm_client
+        self.conversation = conversation
         logger.info("MessageHandler initialized")
     
     async def handle_start(self, message: types.Message) -> None:
@@ -98,9 +104,21 @@ class MessageHandler:
             return
         
         try:
-            # Отправляем запрос в LLM
+            # Получаем историю диалога, если есть Conversation
+            history = []
+            if self.conversation:
+                history = self.conversation.get_history(user_id)
+                logger.info(f"Retrieved history for user {user_id}: {len(history)} messages")
+            
+            # Отправляем запрос в LLM с историей
             logger.info(f"Sending user message to LLM")
-            response = await self.llm_client.get_response(text)
+            response = await self.llm_client.get_response(text, history=history)
+            
+            # Сохраняем пару вопрос-ответ в историю
+            if self.conversation:
+                self.conversation.add_message(user_id, "user", text)
+                self.conversation.add_message(user_id, "assistant", response)
+                logger.info(f"Saved user-assistant pair to history for user {user_id}")
             
             # Разбиваем длинные ответы на части (лимит Telegram: 4096 символов)
             max_length = 4000  # Оставляем запас

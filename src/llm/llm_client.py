@@ -39,15 +39,13 @@ class LLMClient:
         
         logger.info(f"LLMClient initialized with model: {model}")
     
-    async def get_response(self, user_message: str) -> str:
+    async def get_response(self, user_message: str, history: List[Dict[str, str]] = None) -> str:
         """
-        Получить ответ от LLM без истории диалога.
-        
-        Отправляет одиночный запрос с системным промптом.
-        В следующих итерациях будет добавлена поддержка истории.
+        Получить ответ от LLM с учетом истории диалога.
         
         Args:
             user_message: Сообщение от пользователя
+            history: История диалога в формате [{"role": "user", "content": "..."}, ...]
             
         Returns:
             Ответ от LLM
@@ -60,10 +58,17 @@ class LLMClient:
         
         try:
             # Формируем запрос с системным промптом
-            messages = [
-                {"role": "system", "content": self.SYSTEM_PROMPT},
-                {"role": "user", "content": user_message}
-            ]
+            messages = [{"role": "system", "content": self.SYSTEM_PROMPT}]
+            
+            # Добавляем историю диалога, если есть
+            if history:
+                messages.extend(history)
+                logger.debug(f"Added {len(history)} messages from history")
+            
+            # Добавляем текущее сообщение пользователя
+            messages.append({"role": "user", "content": user_message})
+            
+            logger.debug(f"Total messages in context: {len(messages)}")
             
             # Отправляем запрос
             response = await self.client.chat.completions.create(

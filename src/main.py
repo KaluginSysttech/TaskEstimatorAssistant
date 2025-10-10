@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 from config.settings import Settings
 from bot import TelegramBot, MessageHandler
-from llm import LLMClient
+from llm import LLMClient, Conversation
 
 
 def setup_logging(log_level: str) -> None:
@@ -82,7 +82,12 @@ async def main() -> None:
         timeout=settings.llm_timeout
     )
     
-    message_handler = MessageHandler(llm_client=llm_client)
+    conversation = Conversation(max_messages=settings.max_history_messages)
+    
+    message_handler = MessageHandler(
+        llm_client=llm_client,
+        conversation=conversation
+    )
     
     telegram_bot = TelegramBot(
         token=settings.telegram_bot_token,
