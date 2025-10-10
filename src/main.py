@@ -1,5 +1,6 @@
 """Точка входа приложения Telegram LLM Bot."""
 
+import asyncio
 import logging
 import sys
 from pathlib import Path
@@ -7,6 +8,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from config.settings import Settings
+from bot import TelegramBot, MessageHandler
 
 
 def setup_logging(log_level: str) -> None:
@@ -44,7 +46,7 @@ def setup_logging(log_level: str) -> None:
     )
 
 
-def main() -> None:
+async def main() -> None:
     """Точка входа приложения."""
     # Загрузка переменных окружения из .env
     load_dotenv()
@@ -71,8 +73,32 @@ def main() -> None:
     logger.info(f"Log level: {settings.log_level}")
     logger.info("Configuration loaded successfully")
     logger.info("=" * 50)
+    
+    # Инициализация компонентов
+    message_handler = MessageHandler()
+    telegram_bot = TelegramBot(
+        token=settings.telegram_bot_token,
+        message_handler=message_handler
+    )
+    
+    # Запуск бота
+    try:
+        await telegram_bot.start()
+    except KeyboardInterrupt:
+        logger.info("Received interrupt signal")
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}", exc_info=True)
+        sys.exit(1)
+    finally:
+        logger.info("Shutting down gracefully...")
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\nBot stopped by user")
+    except Exception as e:
+        print(f"Fatal error: {e}")
+        sys.exit(1)
 
