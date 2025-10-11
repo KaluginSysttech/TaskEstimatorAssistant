@@ -135,7 +135,8 @@ class MessageHandler:
             "📖 <b>Справка по использованию</b>\n\n"
             "🤖 <b>Доступные команды:</b>\n"
             "/start - Приветственное сообщение\n"
-            "/help - Эта справка\n\n"
+            "/help - Эта справка\n"
+            "/role - Показать мою роль и специализацию\n\n"
             "🎯 <b>Что я оцениваю:</b>\n"
             "Я помогаю определить три величины для вашей задачи:\n"
             "1. <b>СЛОЖНОСТЬ</b> - насколько задача сложна в реализации\n"
@@ -160,6 +161,43 @@ class MessageHandler:
 
         await message.answer(help_text, parse_mode="HTML")
         logger.info(f"Sent help message to user {user_id}")
+
+    async def handle_role(self, message: types.Message) -> None:
+        """
+        Обработка команды /role.
+
+        Отображает текущую роль ассистента из системного промпта.
+
+        Args:
+            message: Входящее сообщение от пользователя
+        """
+        if message.from_user is None:
+            logger.warning("Received message without from_user")
+            return
+
+        user_id = message.from_user.id
+        logger.info(f"User {user_id} requested role information")
+
+        # Извлекаем первые несколько строк из системного промпта
+        prompt_lines = self.llm_client.system_prompt.split("\n")
+        role_description = []
+
+        for line in prompt_lines[:6]:  # Берем первые 6 строк (роль и три величины)
+            line = line.strip()
+            if line:
+                role_description.append(line)
+
+        role_text = (
+            "🎭 <b>Моя роль и специализация</b>\n\n"
+            + "\n".join(role_description)
+            + "\n\n💡 <b>Подход:</b>\n"
+            "Я задаю наводящие вопросы и анализирую ваши ответы, "
+            "чтобы помочь структурировать оценку задачи.\n\n"
+            "📖 Используйте /help для подробной справки."
+        )
+
+        await message.answer(role_text, parse_mode="HTML")
+        logger.info(f"Sent role information to user {user_id}")
 
     async def handle_text(self, message: types.Message) -> None:
         """

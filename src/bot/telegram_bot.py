@@ -43,6 +43,9 @@ class TelegramBot:
         # Команда /help
         self.dp.message.register(self.message_handler.handle_help, Command(commands=["help"]))
 
+        # Команда /role
+        self.dp.message.register(self.message_handler.handle_role, Command(commands=["role"]))
+
         # Текстовые сообщения (обрабатываются последними)
         self.dp.message.register(self.message_handler.handle_text)
 

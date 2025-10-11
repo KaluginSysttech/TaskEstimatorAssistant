@@ -13,38 +13,16 @@ class LLMClient:
     Клиент для работы с LLM через OpenRouter API.
 
     Использует OpenAI-совместимый API для отправки запросов к LLM.
-    Системный промпт жестко закодирован для оценки IT задач.
+    Системный промпт загружается из внешнего файла для удобной настройки.
     """
 
-    # Системный промпт для оценки задач
-    SYSTEM_PROMPT = """Ты помощник по оценке задач. \
-Твоя роль - помогать пользователю определить три ключевые величины для задачи:
-1. СЛОЖНОСТЬ - насколько задача сложна в реализации
-2. НЕОПРЕДЕЛЕННОСТЬ - насколько понятны требования и подходы к решению
-3. ОБЪЕМ - сколько работы требуется для выполнения
-
-ВАЖНЫЕ ПРАВИЛА:
-- Ты НЕ должен знать или понимать суть задачи, которую оценивает пользователь
-- Ты НЕ должен пытаться понять техническую суть или детали задачи
-- Ты анализируешь ТОЛЬКО ответы пользователя, а не саму задачу
-- Твоя цель - задавать наводящие вопросы, чтобы получить достаточно информации \
-для оценки трех величин
-
-Твой подход:
-1. Задавай вопросы о том, как пользователь видит сложность, неопределенность и объем
-2. Не спрашивай про технические детали задачи
-3. Фокусируйся на восприятии пользователя, а не на объективных характеристиках задачи
-4. Когда информации достаточно, помогай сформулировать итоговую оценку по трем величинам
-
-Примеры хороших вопросов:
-- "Насколько понятно вам, что именно нужно сделать?"
-- "Есть ли неясности в требованиях или подходе к решению?"
-- "Как вы оцениваете сложность реализации - высокая, средняя или низкая?"
-- "Сколько времени, по вашим ощущениям, может занять эта работа?"
-
-Помни контекст диалога для более эффективной помощи в оценке."""
-
-    def __init__(self, api_key: str, model: str, timeout: int) -> None:
+    def __init__(
+        self,
+        api_key: str,
+        model: str,
+        timeout: int,
+        system_prompt_path: str = "prompts/system_prompt.txt",
+    ) -> None:
         """
         Инициализация LLM клиента.
 
@@ -52,7 +30,15 @@ class LLMClient:
             api_key: API ключ для OpenRouter
             model: Название модели для использования
             timeout: Таймаут запроса в секундах
+            system_prompt_path: Путь к файлу с системным промптом
+
+        Raises:
+            FileNotFoundError: Если файл с промптом не найден
+            ValueError: Если файл с промптом пустой
         """
+        # Загружаем системный промпт из файла
+        self.system_prompt = self._load_system_prompt(system_prompt_path)
+
         self.client = AsyncOpenAI(
             base_url="https://openrouter.ai/api/v1", api_key=api_key, timeout=timeout
         )
@@ -60,6 +46,35 @@ class LLMClient:
         self.timeout = timeout
 
         logger.info(f"LLMClient initialized with model: {model}")
+        logger.info(f"System prompt loaded from: {system_prompt_path}")
+
+    def _load_system_prompt(self, path: str) -> str:
+        """
+        Загрузить системный промпт из файла.
+
+        Args:
+            path: Путь к файлу с промптом
+
+        Returns:
+            Содержимое системного промпта
+
+        Raises:
+            FileNotFoundError: Если файл не найден
+            ValueError: Если файл пустой
+        """
+        try:
+            with open(path, encoding="utf-8") as f:
+                prompt = f.read().strip()
+
+            if not prompt:
+                raise ValueError(f"System prompt file is empty: {path}")
+
+            logger.info(f"Successfully loaded system prompt ({len(prompt)} characters)")
+            return prompt
+
+        except FileNotFoundError as e:
+            logger.error(f"System prompt file not found: {path}")
+            raise FileNotFoundError(f"System prompt file not found: {path}") from e
 
     async def get_response(
         self, user_message: str, history: list[dict[str, str]] | None = None
@@ -84,7 +99,7 @@ class LLMClient:
 
         try:
             # Формируем запрос с системным промптом
-            messages = [{"role": "system", "content": self.SYSTEM_PROMPT}]
+            messages = [{"role": "system", "content": self.system_prompt}]
 
             # Добавляем историю диалога, если есть
             if history:
