@@ -7,25 +7,25 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from bot import MessageHandler, TelegramBot
 from config.settings import Settings
-from bot import TelegramBot, MessageHandler
-from llm import LLMClient, Conversation
+from llm import Conversation, LLMClient
 
 
 def setup_logging(log_level: str) -> None:
     """
     Настройка логирования приложения.
-    
+
     Args:
         log_level: Уровень логирования (DEBUG, INFO, WARNING, ERROR)
     """
     # Создаем директорию для логов, если её нет
     logs_dir = Path("logs")
     logs_dir.mkdir(exist_ok=True)
-    
+
     # Формат сообщений
     log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    
+
     # Настройка handlers
     handlers = [
         # Вывод в консоль
@@ -35,15 +35,13 @@ def setup_logging(log_level: str) -> None:
         # Запись только ошибок в отдельный файл
         logging.FileHandler(logs_dir / "errors.log", encoding="utf-8"),
     ]
-    
+
     # Фильтр для errors.log - только ERROR и выше
     handlers[2].setLevel(logging.ERROR)
-    
+
     # Применение конфигурации
     logging.basicConfig(
-        level=getattr(logging, log_level.upper()),
-        format=log_format,
-        handlers=handlers
+        level=getattr(logging, log_level.upper()), format=log_format, handlers=handlers
     )
 
 
@@ -51,7 +49,7 @@ async def main() -> None:
     """Точка входа приложения."""
     # Загрузка переменных окружения из .env
     load_dotenv()
-    
+
     try:
         # Инициализация настроек с валидацией
         settings = Settings()
@@ -60,11 +58,11 @@ async def main() -> None:
         print("Убедитесь, что файл .env создан и содержит все обязательные параметры.")
         print("Пример можно найти в .env.example")
         sys.exit(1)
-    
+
     # Настройка логирования
     setup_logging(settings.log_level)
     logger = logging.getLogger(__name__)
-    
+
     logger.info("=" * 50)
     logger.info("Starting Telegram LLM Bot")
     logger.info("=" * 50)
@@ -74,26 +72,20 @@ async def main() -> None:
     logger.info(f"Log level: {settings.log_level}")
     logger.info("Configuration loaded successfully")
     logger.info("=" * 50)
-    
+
     # Инициализация компонентов
     llm_client = LLMClient(
         api_key=settings.openrouter_api_key,
         model=settings.openrouter_model,
-        timeout=settings.llm_timeout
+        timeout=settings.llm_timeout,
     )
-    
+
     conversation = Conversation(max_messages=settings.max_history_messages)
-    
-    message_handler = MessageHandler(
-        llm_client=llm_client,
-        conversation=conversation
-    )
-    
-    telegram_bot = TelegramBot(
-        token=settings.telegram_bot_token,
-        message_handler=message_handler
-    )
-    
+
+    message_handler = MessageHandler(llm_client=llm_client, conversation=conversation)
+
+    telegram_bot = TelegramBot(token=settings.telegram_bot_token, message_handler=message_handler)
+
     # Запуск бота
     try:
         await telegram_bot.start()
@@ -114,4 +106,3 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Fatal error: {e}")
         sys.exit(1)
-
