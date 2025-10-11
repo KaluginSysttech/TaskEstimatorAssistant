@@ -36,6 +36,55 @@ class MessageHandler:
         self.conversation = conversation
         logger.info("MessageHandler initialized")
 
+    def _split_message(self, text: str, max_length: int) -> list[str]:
+        """
+        Разбить длинное сообщение на части для отправки в Telegram.
+
+        Разбивка происходит с приоритетом:
+        1. По переносу строки (\\n)
+        2. По пробелу (слова)
+        3. По символам (если нет другого варианта)
+
+        Args:
+            text: Текст для разбивки
+            max_length: Максимальная длина одной части
+
+        Returns:
+            Список частей сообщения
+
+        Examples:
+            >>> handler._split_message("Short text", 100)
+            ["Short text"]
+
+            >>> handler._split_message("Very long text...", 10)
+            ["Very long", "text..."]
+        """
+        if len(text) <= max_length:
+            return [text]
+
+        parts = []
+        remaining = text
+
+        while remaining:
+            if len(remaining) <= max_length:
+                parts.append(remaining)
+                break
+
+            # Ищем последний перенос строки в пределах лимита
+            split_pos = remaining.rfind("\n", 0, max_length)
+            if split_pos == -1:
+                # Если нет переносов, режем по словам
+                split_pos = remaining.rfind(" ", 0, max_length)
+            if split_pos == -1:
+                # В крайнем случае режем по символам
+                split_pos = max_length
+
+            parts.append(remaining[:split_pos])
+            remaining = remaining[split_pos:].lstrip()
+
+        logger.debug(f"Split message into {len(parts)} parts")
+        return parts
+
     async def handle_start(self, message: types.Message) -> None:
         """
         Обработка команды /start.
@@ -134,35 +183,15 @@ class MessageHandler:
 
             # Разбиваем длинные ответы на части (лимит Telegram: 4096 символов)
             max_length = 4000  # Оставляем запас
-            if len(response) <= max_length:
-                await message.answer(response)
-            else:
-                # Разбиваем на части
-                parts = []
-                while response:
-                    if len(response) <= max_length:
-                        parts.append(response)
-                        break
+            parts = self._split_message(response, max_length)
 
-                    # Ищем последний перенос строки в пределах лимита
-                    split_pos = response.rfind("\n", 0, max_length)
-                    if split_pos == -1:
-                        # Если нет переносов, режем по словам
-                        split_pos = response.rfind(" ", 0, max_length)
-                    if split_pos == -1:
-                        # В крайнем случае режем по символам
-                        split_pos = max_length
-
-                    parts.append(response[:split_pos])
-                    response = response[split_pos:].lstrip()
-
-                # Отправляем все части
-                for i, part in enumerate(parts, 1):
-                    if len(parts) > 1:
-                        prefix = f"[Часть {i}/{len(parts)}]\n\n"
-                        await message.answer(prefix + part)
-                    else:
-                        await message.answer(part)
+            # Отправляем все части
+            for i, part in enumerate(parts, 1):
+                if len(parts) > 1:
+                    prefix = f"[Часть {i}/{len(parts)}]\n\n"
+                    await message.answer(prefix + part)
+                else:
+                    await message.answer(part)
 
             logger.info(f"Sent LLM response to user {user_id}")
 
