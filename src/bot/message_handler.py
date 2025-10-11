@@ -92,6 +92,10 @@ class MessageHandler:
         Args:
             message: Входящее сообщение от пользователя
         """
+        if message.from_user is None:
+            logger.warning("Received message without from_user")
+            return
+
         user_id = message.from_user.id
         username = message.from_user.username or "пользователь"
 
@@ -120,6 +124,10 @@ class MessageHandler:
         Args:
             message: Входящее сообщение от пользователя
         """
+        if message.from_user is None:
+            logger.warning("Received message without from_user")
+            return
+
         user_id = message.from_user.id
         logger.info(f"User {user_id} requested help")
 
@@ -162,6 +170,10 @@ class MessageHandler:
         Args:
             message: Входящее сообщение от пользователя
         """
+        if message.from_user is None or message.text is None:
+            logger.warning("Received message without from_user or text")
+            return
+
         user_id = message.from_user.id
         text = message.text
 

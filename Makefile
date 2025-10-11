@@ -1,4 +1,4 @@
-.PHONY: setup run clean format lint quality
+.PHONY: setup run clean format lint typecheck quality
 
 setup:
 	uv sync --all-extras
@@ -18,6 +18,9 @@ format:
 lint:
 	uv run ruff check src/
 
-quality: format lint
-	@echo "✅ Code quality checks passed!"
+typecheck:
+	cd src && uv run mypy .
+
+quality: format lint typecheck
+	@echo "✅ All code quality checks passed!"
 

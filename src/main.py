@@ -27,17 +27,14 @@ def setup_logging(log_level: str) -> None:
     log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
     # Настройка handlers
-    handlers = [
-        # Вывод в консоль
-        logging.StreamHandler(sys.stdout),
-        # Запись всех логов в файл
-        logging.FileHandler(logs_dir / "app.log", encoding="utf-8"),
-        # Запись только ошибок в отдельный файл
-        logging.FileHandler(logs_dir / "errors.log", encoding="utf-8"),
-    ]
+    console_handler = logging.StreamHandler(sys.stdout)
+    file_handler = logging.FileHandler(logs_dir / "app.log", encoding="utf-8")
+    error_handler = logging.FileHandler(logs_dir / "errors.log", encoding="utf-8")
 
     # Фильтр для errors.log - только ERROR и выше
-    handlers[2].setLevel(logging.ERROR)
+    error_handler.setLevel(logging.ERROR)
+
+    handlers: list[logging.Handler] = [console_handler, file_handler, error_handler]
 
     # Применение конфигурации
     logging.basicConfig(
@@ -52,7 +49,7 @@ async def main() -> None:
 
     try:
         # Инициализация настроек с валидацией
-        settings = Settings()
+        settings = Settings()  # type: ignore[call-arg]
     except Exception as e:
         print(f"Ошибка загрузки конфигурации: {e}")
         print("Убедитесь, что файл .env создан и содержит все обязательные параметры.")

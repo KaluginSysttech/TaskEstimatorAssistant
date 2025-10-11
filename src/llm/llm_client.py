@@ -99,12 +99,15 @@ class LLMClient:
             # Отправляем запрос
             response = await self.client.chat.completions.create(
                 model=self.model,
-                messages=messages,
+                messages=messages,  # type: ignore[arg-type]
                 temperature=0.7,
             )
 
             # Извлекаем ответ
             assistant_message = response.choices[0].message.content
+
+            if assistant_message is None:
+                raise RuntimeError("LLM returned empty response")
 
             # Измеряем время ответа
             elapsed_time = time.time() - start_time
