@@ -154,12 +154,48 @@ class MessageHandler:
             
             logger.info(f"Sent LLM response to user {user_id}")
             
-        except Exception as e:
-            # Обработка ошибок LLM
+        except TimeoutError as e:
+            # Таймаут запроса
             error_message = (
-                "😔 Извините, произошла ошибка при обработке вашего запроса. "
+                "⏱️ Превышено время ожидания ответа. "
+                "Пожалуйста, попробуйте задать вопрос короче или повторите попытку позже."
+            )
+            await message.answer(error_message)
+            logger.error(f"Timeout getting LLM response for user {user_id}: {e}")
+            
+        except ConnectionError as e:
+            # Ошибка сети
+            error_message = (
+                "🌐 Проблемы с подключением к серверу. "
                 "Пожалуйста, попробуйте позже."
             )
             await message.answer(error_message)
-            logger.error(f"Failed to get LLM response for user {user_id}: {e}")
+            logger.error(f"Connection error for user {user_id}: {e}")
+            
+        except ValueError as e:
+            # Rate limit
+            error_message = (
+                "⚠️ Превышен лимит запросов. "
+                "Пожалуйста, подождите немного и попробуйте снова."
+            )
+            await message.answer(error_message)
+            logger.error(f"Rate limit error for user {user_id}: {e}")
+            
+        except RuntimeError as e:
+            # API ошибки
+            error_message = (
+                "❌ Ошибка сервера обработки запросов. "
+                "Пожалуйста, попробуйте позже."
+            )
+            await message.answer(error_message)
+            logger.error(f"API error for user {user_id}: {e}")
+            
+        except Exception as e:
+            # Неожиданные ошибки
+            error_message = (
+                "😔 Произошла непредвиденная ошибка. "
+                "Пожалуйста, попробуйте позже."
+            )
+            await message.answer(error_message)
+            logger.error(f"Unexpected error for user {user_id}: {e}", exc_info=True)
 

@@ -1,9 +1,11 @@
 """Клиент для работы с LLM через OpenRouter."""
 
 import logging
+import time
 from typing import List, Dict
 
 from openai import AsyncOpenAI
+from openai import APITimeoutError, APIConnectionError, RateLimitError, APIStatusError
 
 
 logger = logging.getLogger(__name__)
@@ -56,6 +58,8 @@ class LLMClient:
         logger.info(f"Sending request to LLM (model: {self.model})")
         logger.debug(f"User message: {user_message}")
         
+        start_time = time.time()
+        
         try:
             # Формируем запрос с системным промптом
             messages = [{"role": "system", "content": self.SYSTEM_PROMPT}]
@@ -80,12 +84,43 @@ class LLMClient:
             # Извлекаем ответ
             assistant_message = response.choices[0].message.content
             
-            logger.info("Successfully received response from LLM")
+            # Измеряем время ответа
+            elapsed_time = time.time() - start_time
+            
+            if elapsed_time > 20:
+                logger.warning(
+                    f"Slow LLM response: {elapsed_time:.2f}s (threshold: 20s)"
+                )
+            
+            logger.info(f"Successfully received response from LLM (took {elapsed_time:.2f}s)")
             logger.debug(f"Assistant response: {assistant_message}")
             
             return assistant_message
             
+        except APITimeoutError as e:
+            elapsed_time = time.time() - start_time
+            logger.error(
+                f"LLM request timeout after {elapsed_time:.2f}s: {e}",
+                exc_info=True
+            )
+            raise TimeoutError("Превышено время ожидания ответа от LLM") from e
+            
+        except APIConnectionError as e:
+            logger.error(f"Network error connecting to LLM API: {e}", exc_info=True)
+            raise ConnectionError("Ошибка сети при подключении к LLM") from e
+            
+        except RateLimitError as e:
+            logger.error(f"Rate limit exceeded for LLM API: {e}", exc_info=True)
+            raise ValueError("Превышен лимит запросов к LLM API") from e
+            
+        except APIStatusError as e:
+            logger.error(
+                f"LLM API error (status {e.status_code}): {e.message}",
+                exc_info=True
+            )
+            raise RuntimeError(f"Ошибка API LLM: {e.message}") from e
+            
         except Exception as e:
-            logger.error(f"Error getting LLM response: {e}", exc_info=True)
-            raise
+            logger.error(f"Unexpected error getting LLM response: {e}", exc_info=True)
+            raise RuntimeError(f"Неожиданная ошибка при работе с LLM: {str(e)}") from e
 
