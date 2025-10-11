@@ -1,7 +1,7 @@
 """Обработчик сообщений и команд Telegram бота."""
 
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from aiogram import types
 
@@ -22,15 +22,15 @@ class MessageHandler:
 
     def __init__(
         self,
-        llm_client: Optional["LLMClient"] = None,
-        conversation: Optional["Conversation"] = None,
+        llm_client: "LLMClient",
+        conversation: "Conversation",
     ) -> None:
         """
         Инициализация обработчика.
 
         Args:
-            llm_client: Клиент для работы с LLM (опционально для обратной совместимости)
-            conversation: Хранилище истории диалогов
+            llm_client: Клиент для работы с LLM (обязательный)
+            conversation: Хранилище истории диалогов (обязательное)
         """
         self.llm_client = llm_client
         self.conversation = conversation
@@ -109,7 +109,6 @@ class MessageHandler:
         Обработка текстовых сообщений через LLM.
 
         Отправляет сообщение пользователя в LLM и возвращает ответ.
-        Если LLM не настроен, работает в echo режиме.
 
         Args:
             message: Входящее сообщение от пользователя
@@ -119,30 +118,19 @@ class MessageHandler:
 
         logger.info(f"Received message from user {user_id}: {text}")
 
-        # Проверяем наличие LLM клиента
-        if self.llm_client is None:
-            # Fallback: echo режим
-            response = f"📝 Вы написали: {text}"
-            await message.answer(response)
-            logger.info(f"Sent echo response to user {user_id} (LLM not configured)")
-            return
-
         try:
-            # Получаем историю диалога, если есть Conversation
-            history = []
-            if self.conversation:
-                history = self.conversation.get_history(user_id)
-                logger.info(f"Retrieved history for user {user_id}: {len(history)} messages")
+            # Получаем историю диалога
+            history = self.conversation.get_history(user_id)
+            logger.info(f"Retrieved history for user {user_id}: {len(history)} messages")
 
             # Отправляем запрос в LLM с историей
             logger.info("Sending user message to LLM")
             response = await self.llm_client.get_response(text, history=history)
 
             # Сохраняем пару вопрос-ответ в историю
-            if self.conversation:
-                self.conversation.add_message(user_id, "user", text)
-                self.conversation.add_message(user_id, "assistant", response)
-                logger.info(f"Saved user-assistant pair to history for user {user_id}")
+            self.conversation.add_message(user_id, "user", text)
+            self.conversation.add_message(user_id, "assistant", response)
+            logger.info(f"Saved user-assistant pair to history for user {user_id}")
 
             # Разбиваем длинные ответы на части (лимит Telegram: 4096 символов)
             max_length = 4000  # Оставляем запас

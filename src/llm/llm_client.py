@@ -61,7 +61,9 @@ class LLMClient:
 
         logger.info(f"LLMClient initialized with model: {model}")
 
-    async def get_response(self, user_message: str, history: list[dict[str, str]] = None) -> str:
+    async def get_response(
+        self, user_message: str, history: list[dict[str, str]] | None = None
+    ) -> str:
         """
         Получить ответ от LLM с учетом истории диалога.
 

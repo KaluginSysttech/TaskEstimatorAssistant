@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     log_level: str = Field(
         default="INFO", description="Уровень логирования (DEBUG, INFO, WARNING, ERROR)"
     )
+    telegram_message_max_length: int = Field(
+        default=4000, description="Максимальная длина сообщения Telegram (с запасом от 4096)"
+    )
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", case_sensitive=False
