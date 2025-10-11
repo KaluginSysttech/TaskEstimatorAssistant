@@ -15,6 +15,9 @@ dependencies = [
 dev = [
     "ruff>=0.1.0",
     "mypy>=1.7.0",
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
 ]
 
 [build-system]
@@ -63,4 +66,13 @@ module = [
     "src.*",
 ]
 ignore_missing_imports = true
+
+# Pytest configuration
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+addopts = "-v --strict-markers --tb=short"
 
