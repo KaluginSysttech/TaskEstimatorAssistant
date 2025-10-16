@@ -21,6 +21,12 @@ class Settings(BaseSettings):
         default="openai/gpt-3.5-turbo", description="Модель LLM для использования"
     )
 
+    # Database
+    database_url: str = Field(
+        default="postgresql+asyncpg://telegrambot:telegrambot_password@localhost:5432/telegrambot",
+        description="URL подключения к PostgreSQL",
+    )
+
     # Application
     max_history_messages: int = Field(
         default=20, description="Максимальное количество сообщений в истории диалога"

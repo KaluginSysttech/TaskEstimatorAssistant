@@ -5,7 +5,7 @@ import logging
 from aiogram import Bot, Dispatcher
 from aiogram.filters import Command
 
-from bot.message_handler import MessageHandler
+from src.bot.message_handler import MessageHandler
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +45,9 @@ class TelegramBot:
 
         # Команда /role
         self.dp.message.register(self.message_handler.handle_role, Command(commands=["role"]))
+
+        # Команда /clear
+        self.dp.message.register(self.message_handler.handle_clear, Command(commands=["clear"]))
 
         # Текстовые сообщения (обрабатываются последними)
         self.dp.message.register(self.message_handler.handle_text)

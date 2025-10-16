@@ -5,8 +5,9 @@ from typing import TYPE_CHECKING
 
 from aiogram import types
 
+from src.db import MessageRepository, get_session
+
 if TYPE_CHECKING:
-    from src.llm.conversation import Conversation
     from src.llm.llm_client import LLMClient
 
 logger = logging.getLogger(__name__)
@@ -23,17 +24,17 @@ class MessageHandler:
     def __init__(
         self,
         llm_client: "LLMClient",
-        conversation: "Conversation",
+        max_history_messages: int = 20,
     ) -> None:
         """
         Инициализация обработчика.
 
         Args:
             llm_client: Клиент для работы с LLM (обязательный)
-            conversation: Хранилище истории диалогов (обязательное)
+            max_history_messages: Максимальное количество сообщений в истории
         """
         self.llm_client = llm_client
-        self.conversation = conversation
+        self.max_history_messages = max_history_messages
         logger.info("MessageHandler initialized")
 
     def _split_message(self, text: str, max_length: int) -> list[str]:
@@ -136,7 +137,8 @@ class MessageHandler:
             "🤖 <b>Доступные команды:</b>\n"
             "/start - Приветственное сообщение\n"
             "/help - Эта справка\n"
-            "/role - Показать мою роль и специализацию\n\n"
+            "/role - Показать мою роль и специализацию\n"
+            "/clear - Очистить историю диалога\n\n"
             "🎯 <b>Что я оцениваю:</b>\n"
             "Я помогаю определить три величины для вашей задачи:\n"
             "1. <b>СЛОЖНОСТЬ</b> - насколько задача сложна в реализации\n"
@@ -151,7 +153,8 @@ class MessageHandler:
             "Мне не нужно знать техническую суть вашей задачи.\n"
             "Я анализирую только ваши ответы и помогаю структурировать оценку.\n\n"
             "💬 <b>Контекст диалога:</b>\n"
-            "Я помню последние 10 пар вопрос-ответ, поэтому диалог будет последовательным.\n\n"
+            "Я помню последние пары вопрос-ответ, поэтому диалог будет последовательным.\n"
+            "Используйте /clear для очистки истории диалога.\n\n"
             "🎯 <b>Пример диалога:</b>\n"
             'Вы: "Мне нужно оценить задачу"\n'
             'Я: "Насколько понятно вам, что именно нужно сделать?"\n'
@@ -199,6 +202,47 @@ class MessageHandler:
         await message.answer(role_text, parse_mode="HTML")
         logger.info(f"Sent role information to user {user_id}")
 
+    async def handle_clear(self, message: types.Message) -> None:
+        """
+        Обработка команды /clear.
+
+        Очищает историю диалога пользователя (soft delete).
+
+        Args:
+            message: Входящее сообщение от пользователя
+        """
+        if message.from_user is None:
+            logger.warning("Received message without from_user")
+            return
+
+        user_id = message.from_user.id
+        logger.info(f"User {user_id} requested history clear")
+
+        try:
+            async for session in get_session():
+                repository = MessageRepository(session)
+                count = await repository.clear_history(user_id)
+
+            if count > 0:
+                clear_text = (
+                    "🗑️ <b>История диалога очищена</b>\n\n"
+                    f"Удалено сообщений: {count}\n"
+                    "Можете начать новый диалог."
+                )
+            else:
+                clear_text = (
+                    "ℹ️ <b>История диалога пуста</b>\n\n"
+                    "У вас нет сообщений для удаления."
+                )
+
+            await message.answer(clear_text, parse_mode="HTML")
+            logger.info(f"Cleared history for user {user_id}: {count} messages")
+
+        except Exception as e:
+            error_message = "😔 Произошла ошибка при очистке истории. Попробуйте позже."
+            await message.answer(error_message)
+            logger.error(f"Error clearing history for user {user_id}: {e}", exc_info=True)
+
     async def handle_text(self, message: types.Message) -> None:
         """
         Обработка текстовых сообщений через LLM.
@@ -214,22 +258,25 @@ class MessageHandler:
 
         user_id = message.from_user.id
         text = message.text
+        username = message.from_user.username
 
         logger.info(f"Received message from user {user_id}: {text}")
 
         try:
-            # Получаем историю диалога
-            history = self.conversation.get_history(user_id)
-            logger.info(f"Retrieved history for user {user_id}: {len(history)} messages")
+            # Получаем историю диалога из БД
+            async for session in get_session():
+                repository = MessageRepository(session)
+                history = await repository.get_history(user_id, limit=self.max_history_messages)
+                logger.info(f"Retrieved history for user {user_id}: {len(history)} messages")
 
-            # Отправляем запрос в LLM с историей
-            logger.info("Sending user message to LLM")
-            response = await self.llm_client.get_response(text, history=history)
+                # Отправляем запрос в LLM с историей
+                logger.info("Sending user message to LLM")
+                response = await self.llm_client.get_response(text, history=history)
 
-            # Сохраняем пару вопрос-ответ в историю
-            self.conversation.add_message(user_id, "user", text)
-            self.conversation.add_message(user_id, "assistant", response)
-            logger.info(f"Saved user-assistant pair to history for user {user_id}")
+                # Сохраняем пару вопрос-ответ в историю
+                await repository.add_message(user_id, "user", text, username=username)
+                await repository.add_message(user_id, "assistant", response, username=username)
+                logger.info(f"Saved user-assistant pair to history for user {user_id}")
 
             # Разбиваем длинные ответы на части (лимит Telegram: 4096 символов)
             max_length = 4000  # Оставляем запас
