@@ -1,6 +1,8 @@
 """Модуль работы с LLM."""
 
-from llm.conversation import Conversation
-from llm.llm_client import LLMClient
+from src.llm.llm_client import LLMClient
 
-__all__ = ["LLMClient", "Conversation"]
+# Conversation is deprecated, use MessageRepository from src.db.repository
+# from src.llm.conversation import Conversation
+
+__all__ = ["LLMClient"]

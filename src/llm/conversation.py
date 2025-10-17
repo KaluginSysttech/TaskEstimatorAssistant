@@ -1,8 +1,20 @@
-"""Управление историей диалогов пользователей."""
+"""
+DEPRECATED: Управление историей диалогов пользователей.
+
+Этот модуль устарел и сохранён только для совместимости.
+Используйте src.db.repository.MessageRepository для работы с историей диалогов.
+"""
 
 import logging
+import warnings
 
 logger = logging.getLogger(__name__)
+
+warnings.warn(
+    "Conversation class is deprecated. Use MessageRepository from src.db.repository instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 
 class Conversation:

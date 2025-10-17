@@ -7,9 +7,10 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from bot import MessageHandler, TelegramBot
-from config.settings import Settings
-from llm import Conversation, LLMClient
+from src.bot import MessageHandler, TelegramBot
+from src.config.settings import Settings
+from src.db import MessageRepository, get_session, init_db
+from src.llm import LLMClient
 
 
 def setup_logging(log_level: str) -> None:
@@ -70,6 +71,10 @@ async def main() -> None:
     logger.info("Configuration loaded successfully")
     logger.info("=" * 50)
 
+    # Инициализация базы данных
+    init_db(settings.database_url)
+    logger.info("Database initialized")
+
     # Инициализация компонентов
     llm_client = LLMClient(
         api_key=settings.openrouter_api_key,
@@ -77,9 +82,10 @@ async def main() -> None:
         timeout=settings.llm_timeout,
     )
 
-    conversation = Conversation(max_messages=settings.max_history_messages)
-
-    message_handler = MessageHandler(llm_client=llm_client, conversation=conversation)
+    message_handler = MessageHandler(
+        llm_client=llm_client,
+        max_history_messages=settings.max_history_messages,
+    )
 
     telegram_bot = TelegramBot(token=settings.telegram_bot_token, message_handler=message_handler)
 
