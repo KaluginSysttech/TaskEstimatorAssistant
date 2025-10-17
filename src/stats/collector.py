@@ -13,7 +13,7 @@ class StatCollector(Protocol):
     - RealStatCollector: получает данные из БД
     """
 
-    def get_stats(self, period: str) -> StatsResponse:
+    async def get_stats(self, period: str) -> StatsResponse:
         """Получить статистику за указанный период.
         
         Args:

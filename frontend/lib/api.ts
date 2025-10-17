@@ -2,6 +2,7 @@
  * API client для работы с TEA Statistics Mock API
  */
 
+import type { ChatMessageRequest, ChatMessageResponse } from "@/types/chat";
 import type { APIError, Period, StatsResponse } from "@/types/stats";
 
 /**
@@ -96,6 +97,63 @@ export async function checkAPIHealth(): Promise<boolean> {
         return response.ok;
     } catch {
         return false;
+    }
+}
+
+/**
+ * Отправить сообщение в чат
+ *
+ * @param request - Запрос с сообщением, режимом и session_id
+ * @returns Promise с ответом от ассистента
+ * @throws APIClientError при ошибке запроса
+ */
+export async function sendChatMessage(
+    request: ChatMessageRequest
+): Promise<ChatMessageResponse> {
+    const url = `${API_BASE_URL}/api/v1/chat/message`;
+
+    try {
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(request),
+            cache: "no-store",
+        });
+
+        if (!response.ok) {
+            const errorData: APIError = await response.json().catch(() => ({
+                detail: "Unknown error",
+            }));
+
+            throw new APIClientError(
+                `Chat API request failed: ${response.statusText}`,
+                response.status,
+                errorData
+            );
+        }
+
+        const data: ChatMessageResponse = await response.json();
+        return data;
+    } catch (error) {
+        if (error instanceof APIClientError) {
+            throw error;
+        }
+
+        if (error instanceof TypeError) {
+            throw new APIClientError(
+                `Network error: Unable to connect to Chat API at ${API_BASE_URL}`,
+                undefined,
+                { detail: "Network error" }
+            );
+        }
+
+        throw new APIClientError(
+            `Unexpected error: ${error instanceof Error ? error.message : "Unknown error"}`,
+            undefined,
+            { detail: "Unexpected error" }
+        );
     }
 }
 

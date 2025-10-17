@@ -159,3 +159,50 @@ class StatsResponse(BaseModel):
         }
     }
 
+
+class ChatMessageRequest(BaseModel):
+    """Запрос на отправку сообщения в чат."""
+
+    message: str = Field(..., description="Текст сообщения от пользователя", min_length=1)
+    mode: Literal["normal", "admin"] = Field(
+        default="normal",
+        description="Режим работы чата: normal (обычный LLM) или admin (вопросы по статистике)"
+    )
+    session_id: str = Field(..., description="UUID сессии чата, генерируемый на клиенте")
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "message": "Привет! Расскажи о себе",
+                    "mode": "normal",
+                    "session_id": "550e8400-e29b-41d4-a716-446655440000"
+                },
+                {
+                    "message": "Сколько диалогов было на этой неделе?",
+                    "mode": "admin",
+                    "session_id": "550e8400-e29b-41d4-a716-446655440000"
+                }
+            ]
+        }
+    }
+
+
+class ChatMessageResponse(BaseModel):
+    """Ответ на сообщение в чате."""
+
+    response: str = Field(..., description="Ответ от ассистента")
+    mode: str = Field(..., description="Режим, в котором был получен ответ")
+    timestamp: datetime = Field(..., description="Время создания ответа")
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "response": "Привет! Я AI-ассистент для помощи с оценкой задач.",
+                    "mode": "normal",
+                    "timestamp": "2025-10-17T16:30:00Z"
+                }
+            ]
+        }
+    }

@@ -7,30 +7,53 @@ Run with:
     uvicorn src.api_main:app --host 0.0.0.0 --port 8001 --reload
 """
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from src.api.stats_api import router
+
+from src.api.chat_api import router as chat_router
+from src.api.stats_api import router as stats_router
+from src.config.settings import Settings
+from src.db.database import init_db
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Initialize database connection on startup."""
+    # Startup
+    settings = Settings()
+    init_db(settings.database_url)
+    print(f"[OK] Database initialized: {settings.database_url.split('@')[0]}@***")
+    yield
+    # Cleanup
+    print("[OK] Application shutdown")
 
 # Create FastAPI application
 app = FastAPI(
-    title="TEA Statistics API",
+    title="TEA API",
     description="""
-    Mock API для дашборда статистики проекта TEA.
+    API для дашборда статистики и чата проекта TEA.
     
-    Предоставляет статистику по диалогам Telegram-бота:
-    - Ключевые метрики (диалоги, пользователи, длина, рост)
-    - Графики активности
-    - Последние диалоги
-    - Топ пользователей
+    **Функционал:**
+    - Статистика по диалогам Telegram-бота
+    - Веб-интерфейс чата с двумя режимами:
+      - Normal: Общение с LLM-ассистентом
+      - Admin: Вопросы по статистике диалогов
     
-    **Текущая версия:** Mock реализация с тестовыми данными.
+    **Endpoints:**
+    - `/api/v1/stats` - Получение статистики
+    - `/api/v1/chat/message` - Отправка сообщения в чат
     
-    **Sprint F5:** Будет заменена на реальную реализацию с подключением к БД.
+    **Текущая версия:** Sprint F4
+    
+    **Sprint F5:** Переход с Mock на реальное подключение к БД.
     """,
-    version="1.0.0",
+    version="1.1.0",
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
+    lifespan=lifespan,
 )
 
 # Configure CORS for frontend development
@@ -43,7 +66,8 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(router)
+app.include_router(stats_router)
+app.include_router(chat_router)
 
 
 @app.get("/", tags=["health"])
@@ -51,9 +75,9 @@ async def root():
     """Health check endpoint."""
     return {
         "status": "ok",
-        "service": "TEA Statistics API",
-        "version": "1.0.0",
-        "implementation": "mock",
+        "service": "TEA API",
+        "version": "1.1.0",
+        "sprint": "F4",
         "docs": "/docs"
     }
 
@@ -63,11 +87,12 @@ async def health_check():
     """Detailed health check."""
     return {
         "status": "healthy",
-        "service": "TEA Statistics API",
-        "version": "1.0.0",
-        "implementation": "mock",
+        "service": "TEA API",
+        "version": "1.1.0",
+        "sprint": "F4",
         "endpoints": {
             "stats": "/api/v1/stats?period={day|week|month}",
+            "chat": "/api/v1/chat/message",
             "docs": "/docs",
             "redoc": "/redoc",
             "openapi": "/openapi.json"

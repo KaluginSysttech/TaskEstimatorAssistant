@@ -117,7 +117,7 @@ async def get_stats(
         HTTPException: 400 если передан невалидный период
     """
     try:
-        return collector.get_stats(period)
+        return await collector.get_stats(period)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

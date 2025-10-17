@@ -1,5 +1,7 @@
 "use client";
 
+import { AIChat } from "@/components/ui/ai-chat";
+import { ChatFloatingButton } from "@/components/ui/chat-floating-button";
 import type { Period } from "@/types/stats";
 import { useEffect, useState } from "react";
 import { AppHeader } from "./app-header";
@@ -19,6 +21,7 @@ export function DashboardLayout({
     onRefresh,
 }: DashboardLayoutProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [chatOpen, setChatOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
 
     // Load sidebar state from localStorage only after mount (client-side only)
@@ -54,6 +57,16 @@ export function DashboardLayout({
                     {children}
                 </main>
             </div>
+
+            {/* Chat Components */}
+            <ChatFloatingButton
+                onClick={() => setChatOpen(true)}
+                isOpen={chatOpen}
+            />
+            <AIChat
+                isOpen={chatOpen}
+                onClose={() => setChatOpen(false)}
+            />
         </div>
     );
 }
