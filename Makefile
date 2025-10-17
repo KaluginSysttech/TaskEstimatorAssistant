@@ -1,4 +1,4 @@
-.PHONY: setup run clean format lint typecheck test test-cov quality run-stats-api test-stats-api open-stats-docs
+.PHONY: setup run clean format lint typecheck test test-cov quality run-stats-api test-stats-api open-stats-docs frontend-install frontend-dev frontend-build frontend-lint frontend-typecheck run-dev-stack
 
 setup:
 	uv sync --all-extras
@@ -51,4 +51,35 @@ test-stats-api:
 open-stats-docs:
 	@echo "Opening Statistics API documentation..."
 	@start http://localhost:8001/docs
+
+# Frontend commands
+frontend-install:
+	@echo "Installing frontend dependencies..."
+	cd frontend && pnpm install
+
+frontend-dev:
+	@echo "Starting frontend development server on http://localhost:3000"
+	cd frontend && pnpm run dev
+
+frontend-build:
+	@echo "Building frontend for production..."
+	cd frontend && pnpm run build
+
+frontend-lint:
+	@echo "Linting frontend code..."
+	cd frontend && pnpm run lint
+
+frontend-typecheck:
+	@echo "Type checking frontend code..."
+	cd frontend && pnpm run type-check
+
+# Run full development stack
+run-dev-stack:
+	@echo "Starting full development stack..."
+	@echo "Mock API will run on http://localhost:8001"
+	@echo "Frontend will run on http://localhost:3000"
+	@echo ""
+	@echo "Press Ctrl+C to stop all services"
+	@echo ""
+	@$(MAKE) -j2 run-stats-api frontend-dev
 

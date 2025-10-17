@@ -9,7 +9,7 @@
 | Код | Описание | Статус | План реализации |
 |-----|----------|--------|-----------------|
 | F1 | Требования к дашборду и Mock API | ✅ Completed | [sprint-f1-implementation.md](sprint-f1-implementation.md) |
-| F2 | Каркас frontend проекта | 📋 Planned | - |
+| F2 | Каркас frontend проекта | ✅ Completed | [sprint-f2-implementation.md](sprint-f2-implementation.md) |
 | F3 | Реализация dashboard | 📋 Planned | - |
 | F4 | Реализация ИИ-чата | 📋 Planned | - |
 | F5 | Переход с MockAPI на реальный API | 📋 Planned | - |
