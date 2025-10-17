@@ -1,0 +1,337 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "TEA Statistics API",
+        "description": "Mock API для дашборда статистики проекта TEA",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/api/v1/stats": {
+            "get": {
+                "summary": "Get conversation statistics",
+                "description": "Получить статистику диалогов за указанный период",
+                "operationId": "get_stats",
+                "parameters": [
+                    {
+                        "name": "period",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "day",
+                                "week",
+                                "month"
+                            ],
+                            "description": "Time period for statistics"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StatsResponse"
+                                },
+                                "example": {
+                                    "period": "week",
+                                    "summary": {
+                                        "total_conversations": {
+                                            "value": 964.0,
+                                            "change_percent": 12.5,
+                                            "trend": "up",
+                                            "description": "Trending up this period"
+                                        },
+                                        "active_users": {
+                                            "value": 121.0,
+                                            "change_percent": -5.2,
+                                            "trend": "down",
+                                            "description": "Slightly decreased"
+                                        },
+                                        "avg_conversation_length": {
+                                            "value": 8.4,
+                                            "change_percent": 3.1,
+                                            "trend": "up",
+                                            "description": "Conversations are getting longer"
+                                        },
+                                        "growth_rate": {
+                                            "value": 4.9,
+                                            "change_percent": 0.8,
+                                            "trend": "up",
+                                            "description": "Steady growth"
+                                        }
+                                    },
+                                    "activity_chart": {
+                                        "labels": [
+                                            "2025-10-11",
+                                            "2025-10-12",
+                                            "2025-10-13",
+                                            "2025-10-14",
+                                            "2025-10-15",
+                                            "2025-10-16",
+                                            "2025-10-17"
+                                        ],
+                                        "values": [
+                                            155.5,
+                                            189.6,
+                                            170.3,
+                                            152.6,
+                                            163.0,
+                                            101.8,
+                                            89.0
+                                        ]
+                                    },
+                                    "recent_conversations": [
+                                        {
+                                            "conversation_id": "conv_5118",
+                                            "user_name": "Alice Smith",
+                                            "started_at": "2025-10-17T10:22:46.141283Z",
+                                            "message_count": 10,
+                                            "status": "completed"
+                                        },
+                                        {
+                                            "conversation_id": "conv_2553",
+                                            "user_name": "Ivy Williams",
+                                            "started_at": "2025-10-17T01:17:46.141283Z",
+                                            "message_count": 23,
+                                            "status": "active"
+                                        }
+                                    ],
+                                    "top_users": [
+                                        {
+                                            "username": "demo_209",
+                                            "conversation_count": 22,
+                                            "message_count": 242,
+                                            "last_active": "2025-10-17T03:05:46.141283Z"
+                                        },
+                                        {
+                                            "username": "dev_463",
+                                            "conversation_count": 18,
+                                            "message_count": 198,
+                                            "last_active": "2025-10-16T22:28:46.141283Z"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid period parameter",
+                        "content": {
+                            "application/json": {
+                                "example": {
+                                    "detail": "Invalid period: invalid. Must be 'day', 'week', or 'month'"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Trend": {
+                "type": "string",
+                "enum": [
+                    "up",
+                    "down",
+                    "stable"
+                ],
+                "description": "Направление тренда"
+            },
+            "Period": {
+                "type": "string",
+                "enum": [
+                    "day",
+                    "week",
+                    "month"
+                ],
+                "description": "Период статистики"
+            },
+            "ConversationStatus": {
+                "type": "string",
+                "enum": [
+                    "active",
+                    "completed"
+                ],
+                "description": "Статус диалога"
+            },
+            "MetricValue": {
+                "type": "object",
+                "required": [
+                    "value",
+                    "change_percent",
+                    "trend",
+                    "description"
+                ],
+                "properties": {
+                    "value": {
+                        "type": "number",
+                        "description": "Значение метрики"
+                    },
+                    "change_percent": {
+                        "type": "number",
+                        "description": "Процент изменения относительно предыдущего периода"
+                    },
+                    "trend": {
+                        "$ref": "#/components/schemas/Trend"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Текстовое описание тренда"
+                    }
+                }
+            },
+            "Summary": {
+                "type": "object",
+                "required": [
+                    "total_conversations",
+                    "active_users",
+                    "avg_conversation_length",
+                    "growth_rate"
+                ],
+                "properties": {
+                    "total_conversations": {
+                        "$ref": "#/components/schemas/MetricValue",
+                        "description": "Всего диалогов за период"
+                    },
+                    "active_users": {
+                        "$ref": "#/components/schemas/MetricValue",
+                        "description": "Количество активных пользователей"
+                    },
+                    "avg_conversation_length": {
+                        "$ref": "#/components/schemas/MetricValue",
+                        "description": "Средняя длина диалога (сообщений)"
+                    },
+                    "growth_rate": {
+                        "$ref": "#/components/schemas/MetricValue",
+                        "description": "Скорость роста активности (%)"
+                    }
+                }
+            },
+            "ActivityChart": {
+                "type": "object",
+                "required": [
+                    "labels",
+                    "values"
+                ],
+                "properties": {
+                    "labels": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Временные метки (даты или часы)"
+                    },
+                    "values": {
+                        "type": "array",
+                        "items": {
+                            "type": "number"
+                        },
+                        "description": "Значения активности"
+                    }
+                }
+            },
+            "RecentConversation": {
+                "type": "object",
+                "required": [
+                    "conversation_id",
+                    "user_name",
+                    "started_at",
+                    "message_count",
+                    "status"
+                ],
+                "properties": {
+                    "conversation_id": {
+                        "type": "string",
+                        "description": "Уникальный идентификатор диалога"
+                    },
+                    "user_name": {
+                        "type": "string",
+                        "description": "Имя пользователя"
+                    },
+                    "started_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Время начала диалога (ISO 8601)"
+                    },
+                    "message_count": {
+                        "type": "integer",
+                        "description": "Количество сообщений в диалоге"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/ConversationStatus"
+                    }
+                }
+            },
+            "TopUser": {
+                "type": "object",
+                "required": [
+                    "username",
+                    "conversation_count",
+                    "message_count",
+                    "last_active"
+                ],
+                "properties": {
+                    "username": {
+                        "type": "string",
+                        "description": "Username пользователя"
+                    },
+                    "conversation_count": {
+                        "type": "integer",
+                        "description": "Количество диалогов"
+                    },
+                    "message_count": {
+                        "type": "integer",
+                        "description": "Количество сообщений"
+                    },
+                    "last_active": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Дата последней активности (ISO 8601)"
+                    }
+                }
+            },
+            "StatsResponse": {
+                "type": "object",
+                "required": [
+                    "period",
+                    "summary",
+                    "activity_chart",
+                    "recent_conversations",
+                    "top_users"
+                ],
+                "properties": {
+                    "period": {
+                        "$ref": "#/components/schemas/Period"
+                    },
+                    "summary": {
+                        "$ref": "#/components/schemas/Summary"
+                    },
+                    "activity_chart": {
+                        "$ref": "#/components/schemas/ActivityChart"
+                    },
+                    "recent_conversations": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RecentConversation"
+                        },
+                        "maxItems": 10,
+                        "description": "Список последних диалогов (максимум 10)"
+                    },
+                    "top_users": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TopUser"
+                        },
+                        "maxItems": 5,
+                        "description": "Топ-5 наиболее активных пользователей"
+                    }
+                }
+            }
+        }
+    }
+}
