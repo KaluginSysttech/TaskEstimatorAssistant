@@ -21,7 +21,7 @@
 - **Matrix strategy:** Параллельная сборка 3 сервисов (bot, api, frontend)
 - **Docker Buildx:** Настроено кэширование слоев для ускорения сборки
 - **Тегирование:** Образы публикуются с тегами `latest` и датой сборки (формат `YYYY-MM-DD`)
-- **GHCR:** Публикация в GitHub Container Registry (`ghcr.io/taskestimatorassistant/`)
+- **GHCR:** Публикация в GitHub Container Registry (`ghcr.io/<owner>/` где `<owner>` определяется автоматически)
 
 **Workflow steps:**
 1. Checkout кода
@@ -56,12 +56,16 @@ matrix:
 - Все остальные параметры (environment, volumes, ports, depends_on) идентичны
 
 **Образы:**
-- `ghcr.io/taskestimatorassistant/bot:latest`
-- `ghcr.io/taskestimatorassistant/api:latest`
-- `ghcr.io/taskestimatorassistant/frontend:latest`
+- `ghcr.io/${GHCR_OWNER}/bot:latest` (где `GHCR_OWNER` - имя владельца GitHub репозитория)
+- `ghcr.io/${GHCR_OWNER}/api:latest`
+- `ghcr.io/${GHCR_OWNER}/frontend:latest`
 
 **Использование:**
 ```bash
+# Установить переменную окружения
+export GHCR_OWNER=yourusername  # замените на свой GitHub username
+
+# Запуск
 docker-compose -f docker-compose.registry.yml up
 ```
 
@@ -140,6 +144,9 @@ docker-compose build
 
 ### Использование образов из Registry
 ```bash
+# Установить переменную окружения
+export GHCR_OWNER=yourusername  # замените на свой GitHub username
+
 # Запуск из готовых образов
 docker-compose -f docker-compose.registry.yml up
 
@@ -164,9 +171,11 @@ git push origin feat/devops
 ✅ **Автоматическая сборка и публикация Docker образов настроена**
 
 **Опубликованные образы:**
-- `ghcr.io/taskestimatorassistant/bot:latest`
-- `ghcr.io/taskestimatorassistant/api:latest`
-- `ghcr.io/taskestimatorassistant/frontend:latest`
+- `ghcr.io/<owner>/bot:latest` (где `<owner>` - имя владельца репозитория)
+- `ghcr.io/<owner>/api:latest`
+- `ghcr.io/<owner>/frontend:latest`
+
+Workflow автоматически использует `github.repository_owner` для определения правильного имени владельца.
 
 **Тегирование:**
 - `latest` - последняя сборка
@@ -188,13 +197,15 @@ git push origin feat/devops
 
 3. **Проверить публичный доступ:**
    ```bash
-   docker pull ghcr.io/taskestimatorassistant/bot:latest
-   docker pull ghcr.io/taskestimatorassistant/api:latest
-   docker pull ghcr.io/taskestimatorassistant/frontend:latest
+   # Замените yourusername на свой GitHub username
+   docker pull ghcr.io/yourusername/bot:latest
+   docker pull ghcr.io/yourusername/api:latest
+   docker pull ghcr.io/yourusername/frontend:latest
    ```
 
 4. **Запустить из registry:**
    ```bash
+   export GHCR_OWNER=yourusername  # замените на свой GitHub username
    docker-compose -f docker-compose.registry.yml up
    ```
 

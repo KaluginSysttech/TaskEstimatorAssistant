@@ -7,7 +7,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: taskestimatorassistant
 
 jobs:
   build:
@@ -47,7 +46,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.service.name }}
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.service.name }}
           tags: |
             type=raw,value=latest
             type=raw,value={{date 'YYYY-MM-DD'}}

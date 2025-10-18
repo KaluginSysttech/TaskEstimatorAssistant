@@ -8,7 +8,7 @@
 [![aiogram](https://img.shields.io/badge/aiogram-3.x-blue.svg)](https://docs.aiogram.dev/)
 [![OpenRouter](https://img.shields.io/badge/OpenRouter-API-green.svg)](https://openrouter.ai/)
 [![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://www.docker.com/)
-[![Build](https://github.com/TaskEstimatorAssistant/TEARepo/actions/workflows/build.yml/badge.svg)](https://github.com/TaskEstimatorAssistant/TEARepo/actions/workflows/build.yml)
+[![Build](https://github.com/yourusername/TEARepo/actions/workflows/build.yml/badge.svg)](https://github.com/yourusername/TEARepo/actions/workflows/build.yml)
 [![License](https://img.shields.io/badge/license-MVP-orange.svg)]()
 
 ---
@@ -397,6 +397,9 @@ docker-compose up --build bot
 **Запуск из registry:**
 
 ```bash
+# Установить переменную окружения с именем владельца GitHub
+export GHCR_OWNER=yourusername  # замените на свой GitHub username
+
 # Запуск всех сервисов из готовых образов
 docker-compose -f docker-compose.registry.yml up
 
@@ -410,10 +413,10 @@ docker-compose -f docker-compose.registry.yml logs -f
 **Pull образов вручную:**
 
 ```bash
-# Загрузить образы
-docker pull ghcr.io/taskestimatorassistant/bot:latest
-docker pull ghcr.io/taskestimatorassistant/api:latest
-docker pull ghcr.io/taskestimatorassistant/frontend:latest
+# Загрузить образы (замените yourusername на свой GitHub username)
+docker pull ghcr.io/yourusername/bot:latest
+docker pull ghcr.io/yourusername/api:latest
+docker pull ghcr.io/yourusername/frontend:latest
 ```
 
 **Переключение между режимами:**
