@@ -1,0 +1,71 @@
+version: "3.8"
+
+# Docker Compose конфигурация для использования образов из GitHub Container Registry
+# Использование: docker-compose -f docker-compose.registry.yml up
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: telegram_bot_db
+    environment:
+      POSTGRES_USER: telegrambot
+      POSTGRES_PASSWORD: telegrambot_password
+      POSTGRES_DB: telegrambot
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U telegrambot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  bot:
+    image: ghcr.io/taskestimatorassistant/bot:latest
+    container_name: tea_bot
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - DATABASE_URL=postgresql+asyncpg://telegrambot:telegrambot_password@postgres:5432/telegrambot
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-openai/gpt-oss-20b:free}
+      - MAX_HISTORY_MESSAGES=${MAX_HISTORY_MESSAGES:-20}
+      - LLM_TIMEOUT=${LLM_TIMEOUT:-30}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs
+
+  api:
+    image: ghcr.io/taskestimatorassistant/api:latest
+    container_name: tea_api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - DATABASE_URL=postgresql+asyncpg://telegrambot:telegrambot_password@postgres:5432/telegrambot
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-openai/gpt-oss-20b:free}
+      - MAX_HISTORY_MESSAGES=${MAX_HISTORY_MESSAGES:-20}
+      - LLM_TIMEOUT=${LLM_TIMEOUT:-30}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    ports:
+      - "8001:8001"
+    restart: unless-stopped
+
+  frontend:
+    image: ghcr.io/taskestimatorassistant/frontend:latest
+    container_name: tea_frontend
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

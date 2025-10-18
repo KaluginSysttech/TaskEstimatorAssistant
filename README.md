@@ -8,6 +8,7 @@
 [![aiogram](https://img.shields.io/badge/aiogram-3.x-blue.svg)](https://docs.aiogram.dev/)
 [![OpenRouter](https://img.shields.io/badge/OpenRouter-API-green.svg)](https://openrouter.ai/)
 [![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://www.docker.com/)
+[![Build](https://github.com/TaskEstimatorAssistant/TEARepo/actions/workflows/build.yml/badge.svg)](https://github.com/TaskEstimatorAssistant/TEARepo/actions/workflows/build.yml)
 [![License](https://img.shields.io/badge/license-MVP-orange.svg)]()
 
 ---
@@ -383,6 +384,55 @@ docker-compose up --build
 # Или пересобрать конкретный сервис
 docker-compose up --build bot
 ```
+
+### Использование образов из GitHub Container Registry
+
+Проект автоматически публикует готовые Docker образы в GitHub Container Registry. Вы можете использовать их вместо локальной сборки.
+
+**Преимущества:**
+- ✅ Не нужно собирать образы локально
+- ✅ Быстрый старт без длительной сборки
+- ✅ Готовые протестированные образы
+
+**Запуск из registry:**
+
+```bash
+# Запуск всех сервисов из готовых образов
+docker-compose -f docker-compose.registry.yml up
+
+# В фоновом режиме
+docker-compose -f docker-compose.registry.yml up -d
+
+# Просмотр логов
+docker-compose -f docker-compose.registry.yml logs -f
+```
+
+**Pull образов вручную:**
+
+```bash
+# Загрузить образы
+docker pull ghcr.io/taskestimatorassistant/bot:latest
+docker pull ghcr.io/taskestimatorassistant/api:latest
+docker pull ghcr.io/taskestimatorassistant/frontend:latest
+```
+
+**Переключение между режимами:**
+
+```bash
+# Локальная сборка (разработка)
+docker-compose up --build
+
+# Готовые образы из registry (быстрый старт)
+docker-compose -f docker-compose.registry.yml up
+```
+
+**Настройка публичного доступа (для мейнтейнеров):**
+
+После первой публикации образов необходимо сделать их публичными:
+1. Перейдите в GitHub → Packages
+2. Выберите пакет (bot/api/frontend)
+3. Package Settings → Change visibility → Public
+4. Подтвердите изменение
 
 ---
 

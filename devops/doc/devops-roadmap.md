@@ -9,7 +9,7 @@ Roadmap развития DevOps процессов для проекта TEA (Te
 | Код | Описание | Статус | План реализации |
 |-----|----------|--------|-----------------|
 | **D0** | Basic Docker Setup | ✅ Completed | [sprint-d0-implementation.md](plans/sprint-d0-implementation.md) |
-| **D1** | Build & Publish | 📋 Planned | - |
+| **D1** | Build & Publish | ✅ Completed | [sprint-d1-implementation.md](plans/sprint-d1-implementation.md) |
 | **D2** | Развертывание на сервер | 📋 Planned | - |
 | **D3** | Auto Deploy | 📋 Planned | - |
 
