@@ -6,10 +6,19 @@ import type { ChatMessageRequest, ChatMessageResponse } from "@/types/chat";
 import type { APIError, Period, StatsResponse } from "@/types/stats";
 
 /**
- * URL Mock API
- * В production это будет настраиваться через переменные окружения
+ * Получить базовый URL API в зависимости от окружения
+ * - Server-side (SSR в Docker): http://api:8001
+ * - Client-side (Browser): http://localhost:8001
  */
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
+const getAPIBaseURL = (): string => {
+    // Если код выполняется на сервере (SSR)
+    if (typeof window === 'undefined') {
+        // Внутри Docker используем service name
+        return process.env.NEXT_PUBLIC_API_URL || 'http://api:8001';
+    }
+    // В браузере используем localhost
+    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+};
 
 /**
  * Класс ошибки API
@@ -33,7 +42,8 @@ export class APIClientError extends Error {
  * @throws APIClientError при ошибке запроса
  */
 export async function fetchStats(period: Period): Promise<StatsResponse> {
-    const url = `${API_BASE_URL}/api/v1/stats?period=${period}`;
+    const apiBaseUrl = getAPIBaseURL();
+    const url = `${apiBaseUrl}/api/v1/stats?period=${period}`;
 
     try {
         const response = await fetch(url, {
@@ -68,7 +78,7 @@ export async function fetchStats(period: Period): Promise<StatsResponse> {
         // Обрабатываем сетевые ошибки
         if (error instanceof TypeError) {
             throw new APIClientError(
-                `Network error: Unable to connect to API at ${API_BASE_URL}. Make sure the Mock API is running.`,
+                `Network error: Unable to connect to API at ${apiBaseUrl}. Make sure the API is running.`,
                 undefined,
                 { detail: "Network error" }
             );
@@ -90,7 +100,8 @@ export async function fetchStats(period: Period): Promise<StatsResponse> {
  */
 export async function checkAPIHealth(): Promise<boolean> {
     try {
-        const response = await fetch(`${API_BASE_URL}/health`, {
+        const apiBaseUrl = getAPIBaseURL();
+        const response = await fetch(`${apiBaseUrl}/health`, {
             method: "GET",
             cache: "no-store",
         });
@@ -110,7 +121,8 @@ export async function checkAPIHealth(): Promise<boolean> {
 export async function sendChatMessage(
     request: ChatMessageRequest
 ): Promise<ChatMessageResponse> {
-    const url = `${API_BASE_URL}/api/v1/chat/message`;
+    const apiBaseUrl = getAPIBaseURL();
+    const url = `${apiBaseUrl}/api/v1/chat/message`;
 
     try {
         const response = await fetch(url, {
@@ -143,7 +155,7 @@ export async function sendChatMessage(
 
         if (error instanceof TypeError) {
             throw new APIClientError(
-                `Network error: Unable to connect to Chat API at ${API_BASE_URL}`,
+                `Network error: Unable to connect to Chat API at ${apiBaseUrl}`,
                 undefined,
                 { detail: "Network error" }
             );

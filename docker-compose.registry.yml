@@ -1,5 +1,15 @@
 version: "3.8"
 
+# Docker Compose конфигурация для использования образов из GitHub Container Registry
+# Использование: docker-compose -f docker-compose.registry.yml up
+#
+# Переменные окружения:
+# GHCR_OWNER - имя владельца GitHub репозитория (например, ваш username или org)
+# По умолчанию используется нижний регистр имени из переменной окружения.
+# Примеры:
+#   export GHCR_OWNER=yourusername
+#   docker-compose -f docker-compose.registry.yml up
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -20,9 +30,7 @@ services:
       retries: 5
 
   bot:
-    build:
-      context: .
-      dockerfile: Dockerfile.bot
+    image: ghcr.io/${GHCR_OWNER}/bot:latest
     container_name: tea_bot
     depends_on:
       postgres:
@@ -40,9 +48,7 @@ services:
       - ./logs:/app/logs
 
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile.api
+    image: ghcr.io/${GHCR_OWNER}/api:latest
     container_name: tea_api
     depends_on:
       postgres:
@@ -60,18 +66,13 @@ services:
     restart: unless-stopped
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: ghcr.io/${GHCR_OWNER}/frontend:latest
     container_name: tea_frontend
     depends_on:
       - api
     ports:
       - "3000:3000"
     restart: unless-stopped
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
 
 volumes:
   postgres_data:
