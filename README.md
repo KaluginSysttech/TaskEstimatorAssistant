@@ -7,6 +7,7 @@
 [![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![aiogram](https://img.shields.io/badge/aiogram-3.x-blue.svg)](https://docs.aiogram.dev/)
 [![OpenRouter](https://img.shields.io/badge/OpenRouter-API-green.svg)](https://openrouter.ai/)
+[![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://www.docker.com/)
 [![License](https://img.shields.io/badge/license-MVP-orange.svg)]()
 
 ---
@@ -251,6 +252,139 @@ uv run alembic upgrade head
 # Откат последней миграции
 uv run alembic downgrade -1
 ```
+
+---
+
+## 🐳 Запуск через Docker
+
+### Быстрый старт с Docker (рекомендуется)
+
+Самый простой способ запустить проект локально - использовать Docker Compose.
+
+#### Требования
+- ✅ Docker и Docker Compose установлены
+- ✅ Telegram Bot Token ([@BotFather](https://t.me/BotFather))
+- ✅ OpenRouter API Key ([openrouter.ai](https://openrouter.ai/))
+
+#### Шаг 1: Клонирование репозитория
+
+```bash
+git clone <repository-url>
+cd TEARepo
+```
+
+#### Шаг 2: Настройка переменных окружения
+
+Создайте файл `.env` в корне проекта:
+
+```env
+# Обязательные параметры
+TELEGRAM_BOT_TOKEN=your_telegram_token_here
+OPENROUTER_API_KEY=your_openrouter_key_here
+
+# Опциональные (значения по умолчанию)
+OPENROUTER_MODEL=openai/gpt-oss-20b:free
+MAX_HISTORY_MESSAGES=20
+LLM_TIMEOUT=30
+LOG_LEVEL=INFO
+```
+
+#### Шаг 3: Запуск всех сервисов
+
+```bash
+docker-compose up
+```
+
+✅ **Готово!** Все сервисы запущены:
+- 🤖 **Telegram Bot** - готов к приему сообщений
+- 🌐 **API Server** - доступен на http://localhost:8001
+- 💻 **Frontend Dashboard** - доступен на http://localhost:3000
+- 🗄️ **PostgreSQL** - работает на порту 5432
+
+#### Проверка работоспособности
+
+1. **Frontend**: Откройте http://localhost:3000 - должен открыться дашборд
+2. **API**: Откройте http://localhost:8001/docs - Swagger документация
+3. **Bot**: Напишите боту в Telegram - он должен ответить
+4. **Logs**: Проверьте логи в директории `logs/`
+
+#### Управление сервисами
+
+```bash
+# Запуск в фоновом режиме
+docker-compose up -d
+
+# Просмотр логов
+docker-compose logs -f
+
+# Просмотр логов конкретного сервиса
+docker-compose logs -f bot
+docker-compose logs -f api
+docker-compose logs -f frontend
+
+# Остановка всех сервисов
+docker-compose down
+
+# Остановка с удалением volumes (БД будет очищена)
+docker-compose down -v
+
+# Пересборка образов после изменения кода
+docker-compose up --build
+```
+
+#### Применение миграций БД
+
+После первого запуска примените миграции:
+
+```bash
+# Если сервисы уже запущены
+docker-compose exec bot uv run alembic upgrade head
+
+# Или через API контейнер
+docker-compose exec api uv run alembic upgrade head
+```
+
+### Структура сервисов
+
+| Сервис | Порт | Описание |
+|--------|------|----------|
+| **PostgreSQL** | 5432 | База данных |
+| **Bot** | - | Telegram бот (не использует порты) |
+| **API** | 8001 | FastAPI сервер для дашборда |
+| **Frontend** | 3000 | Next.js веб-интерфейс |
+
+### Troubleshooting Docker
+
+**Проблема: "Port already in use"**
+```bash
+# Проверить занятые порты
+docker-compose ps
+netstat -ano | findstr :3000  # Windows
+lsof -i :3000                 # Linux/Mac
+
+# Остановить конфликтующий контейнер
+docker stop <container_id>
+```
+
+**Проблема: "Database connection failed"**
+```bash
+# Проверить healthcheck postgres
+docker-compose ps postgres
+
+# Подождать пока postgres станет healthy
+# Бот и API автоматически дождутся готовности БД
+```
+
+**Проблема: Изменения в коде не применяются**
+```bash
+# Пересобрать образы
+docker-compose up --build
+
+# Или пересобрать конкретный сервис
+docker-compose up --build bot
+```
+
+---
 
 ## 📁 Структура проекта
 

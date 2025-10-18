@@ -1,0 +1,25 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Установка UV
+RUN pip install --no-cache-dir uv
+
+# Копирование файлов зависимостей
+COPY pyproject.toml uv.lock ./
+
+# Установка зависимостей через UV
+RUN uv sync --frozen
+
+# Копирование исходного кода
+COPY src/ ./src/
+COPY prompts/ ./prompts/
+COPY alembic/ ./alembic/
+COPY alembic.ini ./
+
+# Открытие порта API
+EXPOSE 8001
+
+# Команда запуска API через uvicorn
+CMD ["uv", "run", "uvicorn", "src.api_main:app", "--host", "0.0.0.0", "--port", "8001"]
+

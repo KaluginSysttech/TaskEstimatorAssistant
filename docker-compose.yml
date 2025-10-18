@@ -13,6 +13,65 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U telegrambot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile.bot
+    container_name: tea_bot
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - DATABASE_URL=postgresql+asyncpg://telegrambot:telegrambot_password@postgres:5432/telegrambot
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-openai/gpt-oss-20b:free}
+      - MAX_HISTORY_MESSAGES=${MAX_HISTORY_MESSAGES:-20}
+      - LLM_TIMEOUT=${LLM_TIMEOUT:-30}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: tea_api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - DATABASE_URL=postgresql+asyncpg://telegrambot:telegrambot_password@postgres:5432/telegrambot
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-openai/gpt-oss-20b:free}
+      - MAX_HISTORY_MESSAGES=${MAX_HISTORY_MESSAGES:-20}
+      - LLM_TIMEOUT=${LLM_TIMEOUT:-30}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    ports:
+      - "8001:8001"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: tea_frontend
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
 
 volumes:
   postgres_data:
