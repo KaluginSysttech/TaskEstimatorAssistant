@@ -2,7 +2,7 @@ version: "3.8"
 
 # Docker Compose конфигурация для использования образов из GitHub Container Registry
 # Использование: docker-compose -f docker-compose.registry.yml up
-# 
+#
 # Переменные окружения:
 # GHCR_OWNER - имя владельца GitHub репозитория (например, ваш username или org)
 # По умолчанию используется нижний регистр имени из переменной окружения.
