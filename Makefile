@@ -1,4 +1,4 @@
-.PHONY: setup run clean format lint typecheck test test-cov quality
+.PHONY: setup run clean format lint typecheck test test-cov quality run-stats-api test-stats-api open-stats-docs frontend-install frontend-dev frontend-build frontend-lint frontend-typecheck run-dev-stack
 
 setup:
 	uv sync --all-extras
@@ -29,4 +29,57 @@ test-cov:
 
 quality: format lint typecheck test
 	@echo "✅ All code quality checks passed!"
+
+# Statistics API commands
+run-stats-api:
+	@echo "Starting Statistics API on http://localhost:8001"
+	@echo "Swagger UI: http://localhost:8001/docs"
+	@echo "ReDoc: http://localhost:8001/redoc"
+	uv run uvicorn src.api_main:app --host 0.0.0.0 --port 8001 --reload
+
+test-stats-api:
+	@echo "Testing Statistics API endpoints..."
+	@echo "\n=== Testing /health endpoint ==="
+	@curl -s "http://localhost:8001/health" | python -m json.tool
+	@echo "\n=== Testing /api/v1/stats?period=day ==="
+	@curl -s "http://localhost:8001/api/v1/stats?period=day" | python -m json.tool
+	@echo "\n=== Testing /api/v1/stats?period=week ==="
+	@curl -s "http://localhost:8001/api/v1/stats?period=week" | python -m json.tool
+	@echo "\n=== Testing /api/v1/stats?period=month ==="
+	@curl -s "http://localhost:8001/api/v1/stats?period=month" | python -m json.tool
+
+open-stats-docs:
+	@echo "Opening Statistics API documentation..."
+	@start http://localhost:8001/docs
+
+# Frontend commands
+frontend-install:
+	@echo "Installing frontend dependencies..."
+	cd frontend && pnpm install
+
+frontend-dev:
+	@echo "Starting frontend development server on http://localhost:3000"
+	cd frontend && pnpm run dev
+
+frontend-build:
+	@echo "Building frontend for production..."
+	cd frontend && pnpm run build
+
+frontend-lint:
+	@echo "Linting frontend code..."
+	cd frontend && pnpm run lint
+
+frontend-typecheck:
+	@echo "Type checking frontend code..."
+	cd frontend && pnpm run type-check
+
+# Run full development stack
+run-dev-stack:
+	@echo "Starting full development stack..."
+	@echo "Mock API will run on http://localhost:8001"
+	@echo "Frontend will run on http://localhost:3000"
+	@echo ""
+	@echo "Press Ctrl+C to stop all services"
+	@echo ""
+	@$(MAKE) -j2 run-stats-api frontend-dev
 

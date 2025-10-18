@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Boolean, ForeignKey, Integer, String, Text, func
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -72,5 +72,71 @@ class Message(Base):
         return (
             f"<Message(id={self.id}, user_id={self.user_id}, "
             f"role={self.role}, length={self.content_length})>"
+        )
+
+
+class ChatSession(Base):
+    """
+    Модель чат-сессии для веб-интерфейса.
+
+    Хранит информацию о сессиях чата с уникальным session_id,
+    генерируемым на клиенте.
+    """
+
+    __tablename__ = "chat_sessions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    session_id: Mapped[str] = mapped_column(
+        String(255), unique=True, index=True, nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        server_default=func.now(), nullable=False
+    )
+    last_active: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    # Relationship
+    messages: Mapped[list["ChatMessage"]] = relationship(
+        "ChatMessage", back_populates="session", cascade="all, delete-orphan"
+    )
+
+    def __repr__(self) -> str:
+        """Строковое представление чат-сессии."""
+        return f"<ChatSession(id={self.id}, session_id={self.session_id})>"
+
+
+class ChatMessage(Base):
+    """
+    Модель сообщения в веб-чате.
+
+    Хранит историю сообщений для веб-интерфейса чата
+    с поддержкой разных режимов (normal/admin).
+    """
+
+    __tablename__ = "chat_messages"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    session_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("chat_sessions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    role: Mapped[str] = mapped_column(String(20), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    mode: Mapped[str] = mapped_column(String(20), default="normal", nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        server_default=func.now(), nullable=False, index=True
+    )
+
+    # Relationship
+    session: Mapped["ChatSession"] = relationship("ChatSession", back_populates="messages")
+
+    def __repr__(self) -> str:
+        """Строковое представление чат-сообщения."""
+        return (
+            f"<ChatMessage(id={self.id}, session_id={self.session_id}, "
+            f"role={self.role}, mode={self.mode})>"
         )
 
